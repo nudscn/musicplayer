@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MusicPlayer</string>
+    <string name="appwidget_description">&#26412;&#22320;&#38899;&#20048;&#25773;&#25918;&#22120;&#25511;&#21046;&#23567;&#37096;&#20214;</string>
+    <string name="widget_mode_sequential">&#39034;&#24207;</string>
+    <string name="widget_mode_list">&#21015;&#34920;</string>
+    <string name="widget_mode_shuffle">&#38543;&#26426;</string>
+</resources>

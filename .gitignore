@@ -1,0 +1,17 @@
+*.iml
+.gradle/
+.idea/
+local.properties
+/build/
+/.cxx/
+captures/
+app/build/
+/.android-home/
+/.android-user-home/
+/.downloads/
+/.keystore/
+/.tools/
+/android-sdk/
+keystore.properties
+*.jks
+*.keystore

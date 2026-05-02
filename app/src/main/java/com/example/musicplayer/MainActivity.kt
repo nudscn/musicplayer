@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
                     onToggleFavorite = viewModel::toggleFavorite,
                     onCreatePlaylist = viewModel::createPlaylist,
                     onAddTrackToPlaylist = viewModel::addTrackToPlaylist,
+                    onEditTrack = viewModel::editTrackMetadata,
                     onRenamePlaylist = viewModel::renamePlaylist,
                     onDeletePlaylist = viewModel::deletePlaylist,
                     onRemoveTrackFromPlaylist = viewModel::removeTrackFromPlaylist,

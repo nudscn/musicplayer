@@ -13,6 +13,7 @@ class MusicScanner(
         rootDocument: DocumentFile,
         rootUri: String,
         previousTracks: Map<String, TrackEntity>,
+        onProgress: ((ScanProgress) -> Unit)? = null,
     ): List<TrackEntity> {
         val tracks = mutableListOf<TrackEntity>()
         walkDirectory(
@@ -21,6 +22,7 @@ class MusicScanner(
             relativePath = rootDocument.name ?: "Music",
             previousTracks = previousTracks,
             output = tracks,
+            onProgress = onProgress,
         )
         return tracks
     }
@@ -31,6 +33,7 @@ class MusicScanner(
         relativePath: String,
         previousTracks: Map<String, TrackEntity>,
         output: MutableList<TrackEntity>,
+        onProgress: ((ScanProgress) -> Unit)?,
     ) {
         val children = directory.listFiles().toList()
         val lyricLookup = children
@@ -48,13 +51,20 @@ class MusicScanner(
                     lyricsUri = lyricLookup[stem]?.uri?.toString(),
                     previous = previous,
                 )
+                onProgress?.invoke(
+                    ScanProgress(
+                        scannedTrackCount = output.size,
+                        currentTrackName = file.name ?: "Unknown File",
+                        currentFolder = relativePath,
+                    ),
+                )
             }
 
         children.filter { it.isDirectory }
             .sortedBy { it.name?.lowercase(Locale.US) }
             .forEach { child ->
                 val nextPath = listOf(relativePath, child.name ?: "Folder").joinToString(" / ")
-                walkDirectory(child, rootUri, nextPath, previousTracks, output)
+                walkDirectory(child, rootUri, nextPath, previousTracks, output, onProgress)
             }
     }
 
@@ -66,12 +76,18 @@ class MusicScanner(
     ): TrackEntity {
         val uriString = uri.toString()
         val metadata = readMetadata(uriString)
+        val resolvedTitle = previous?.customTitle ?: metadata.title ?: name?.substringBeforeLast('.') ?: "Unknown Title"
+        val resolvedArtist = previous?.customArtist ?: metadata.artist ?: "Unknown Artist"
+        val resolvedAlbum = previous?.customAlbum ?: metadata.album ?: "Unknown Album"
         return TrackEntity(
             contentUri = uriString,
             rootUri = rootUri,
-            title = metadata.title ?: name?.substringBeforeLast('.') ?: "Unknown Title",
-            artist = metadata.artist ?: "Unknown Artist",
-            album = metadata.album ?: "Unknown Album",
+            title = resolvedTitle,
+            artist = resolvedArtist,
+            album = resolvedAlbum,
+            customTitle = previous?.customTitle,
+            customArtist = previous?.customArtist,
+            customAlbum = previous?.customAlbum,
             folder = folder,
             displayName = name ?: "Unknown File",
             mimeType = type ?: "audio/*",
@@ -141,4 +157,10 @@ data class TrackMetadata(
     val trackNumber: Int? = null,
     val discNumber: Int? = null,
     val hasArtwork: Boolean = false,
+)
+
+data class ScanProgress(
+    val scannedTrackCount: Int,
+    val currentTrackName: String,
+    val currentFolder: String,
 )

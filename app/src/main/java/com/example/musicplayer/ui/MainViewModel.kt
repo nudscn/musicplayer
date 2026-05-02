@@ -11,6 +11,7 @@ import com.example.musicplayer.data.db.FolderSummary
 import com.example.musicplayer.data.db.PlaylistSummary
 import com.example.musicplayer.data.db.RootDirectoryEntity
 import com.example.musicplayer.data.db.TrackEntity
+import com.example.musicplayer.data.repository.LibraryScanProgress
 import com.example.musicplayer.playback.EqPreset
 import com.example.musicplayer.playback.PlaybackSnapshot
 import com.example.musicplayer.ui.model.BrowserTarget
@@ -120,7 +121,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             scanState.value = ScanState.Scanning("\u6b63\u5728\u626b\u63cf\u65b0\u76ee\u5f55\u2026")
             runCatching {
-                repository.addRootAndScan(uri)
+                repository.addRootAndScan(uri) { progress ->
+                    scanState.value = ScanState.Scanning(progress.toMessage(prefix = "\u6b63\u5728\u626b\u63cf\u65b0\u76ee\u5f55"))
+                }
             }.onSuccess { result ->
                 scanState.value =
                     ScanState.Finished("\u5df2\u52a0\u5165 ${result.rootName}\uff0c\u53d1\u73b0 ${result.trackCount} \u9996\u6b4c")
@@ -134,7 +137,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             scanState.value = ScanState.Scanning("\u6b63\u5728\u5237\u65b0\u672c\u5730\u66f2\u5e93\u2026")
             runCatching {
-                repository.rescanAllRoots()
+                repository.rescanAllRoots { progress ->
+                    scanState.value = ScanState.Scanning(progress.toMessage(prefix = "\u6b63\u5728\u5237\u65b0\u672c\u5730\u66f2\u5e93"))
+                }
             }.onSuccess { results ->
                 val totalTracks = results.sumOf { it.trackCount }
                 scanState.value =
@@ -217,6 +222,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun editTrackMetadata(track: TrackEntity, title: String, artist: String, album: String) {
+        viewModelScope.launch {
+            runCatching {
+                repository.editTrackMetadata(track, title, artist, album)
+            }.onFailure { error ->
+                scanState.value = ScanState.Error(error.message ?: "歌曲信息保存失败")
+            }
+        }
+    }
+
     fun startSleepTimer(minutes: Int) = playbackManager.startSleepTimer(minutes)
 
     fun cancelSleepTimer() = playbackManager.cancelSleepTimer()
@@ -264,6 +279,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             is BrowserTarget.Playlist -> tab == LibraryTab.PLAYLISTS
             null -> true
         }
+}
+
+private fun LibraryScanProgress.toMessage(prefix: String): String {
+    val location = if (rootCount > 1) {
+        "$prefix（$rootIndex/$rootCount：$rootName）"
+    } else {
+        "$prefix（$rootName）"
+    }
+    return "$location · 已发现 $totalTrackCount 首 · $currentTrackName"
 }
 
 private fun List<TrackEntity>.filterFor(target: BrowserTarget?): List<TrackEntity> =

@@ -118,6 +118,28 @@ interface LibraryDao {
     @Query(
         """
         UPDATE tracks
+        SET title = :title,
+            artist = :artist,
+            album = :album,
+            customTitle = :customTitle,
+            customArtist = :customArtist,
+            customAlbum = :customAlbum
+        WHERE contentUri = :contentUri
+        """,
+    )
+    suspend fun updateTrackMetadata(
+        contentUri: String,
+        title: String,
+        artist: String,
+        album: String,
+        customTitle: String?,
+        customArtist: String?,
+        customAlbum: String?,
+    )
+
+    @Query(
+        """
+        UPDATE tracks
         SET lastPlayedAt = :playedAt,
             playCount = playCount + 1
         WHERE contentUri = :contentUri

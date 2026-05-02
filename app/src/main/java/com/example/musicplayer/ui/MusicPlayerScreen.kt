@@ -90,6 +90,7 @@ import com.example.musicplayer.ui.theme.Obsidian
 import com.example.musicplayer.ui.theme.Panel
 import com.example.musicplayer.ui.theme.PanelAlt
 import com.example.musicplayer.ui.theme.TextMuted
+import com.example.musicplayer.ui.theme.TextPrimary
 import com.example.musicplayer.util.formatAsClock
 import com.example.musicplayer.util.loadLyricsBody
 import com.example.musicplayer.util.loadLyricsPreview
@@ -110,6 +111,7 @@ fun MusicPlayerScreen(
     onToggleFavorite: (TrackEntity) -> Unit,
     onCreatePlaylist: (String, TrackEntity?) -> Unit,
     onAddTrackToPlaylist: (Long, TrackEntity) -> Unit,
+    onEditTrack: (TrackEntity, String, String, String) -> Unit,
     onRenamePlaylist: (Long, String) -> Unit,
     onDeletePlaylist: (Long) -> Unit,
     onRemoveTrackFromPlaylist: (Long, TrackEntity) -> Unit,
@@ -130,6 +132,7 @@ fun MusicPlayerScreen(
     var playlistToDelete by remember { mutableStateOf<PlaylistSummary?>(null) }
     var showFullPlayer by remember { mutableStateOf(false) }
     var showSleepTimerDialog by remember { mutableStateOf(false) }
+    var trackToEdit by remember { mutableStateOf<TrackEntity?>(null) }
 
     fun openPlaylistPicker(track: TrackEntity) {
         pendingPlaylistTrack = track
@@ -170,6 +173,7 @@ fun MusicPlayerScreen(
                         onSelectEqPreset = onSelectEqPreset,
                         onToggleFavorite = onToggleFavorite,
                         onAddToPlaylist = ::openPlaylistPicker,
+                        onEditTrack = { trackToEdit = it },
                         onOpenFullPlayer = { if (state.playback.currentTrack != null) showFullPlayer = true },
                         onOpenSleepTimer = { showSleepTimerDialog = true },
                     )
@@ -222,6 +226,7 @@ fun MusicPlayerScreen(
                                 onPlayTrack = onPlayTrack,
                                 onToggleFavorite = onToggleFavorite,
                                 onAddToPlaylist = ::openPlaylistPicker,
+                                onEditTrack = { trackToEdit = it },
                                 playlistIdForRemoval = (state.browserTarget as? BrowserTarget.Playlist)?.id,
                                 onRemoveFromPlaylist = onRemoveTrackFromPlaylist,
                             )
@@ -236,6 +241,7 @@ fun MusicPlayerScreen(
                                 onPlayTrack = onPlayTrack,
                                 onToggleFavorite = onToggleFavorite,
                                 onAddToPlaylist = ::openPlaylistPicker,
+                                onEditTrack = { trackToEdit = it },
                             )
                         }
                     }
@@ -263,6 +269,7 @@ fun MusicPlayerScreen(
                                 onPlayTrack = onPlayTrack,
                                 onToggleFavorite = onToggleFavorite,
                                 onAddToPlaylist = ::openPlaylistPicker,
+                                onEditTrack = { trackToEdit = it },
                             )
                         }
                     }
@@ -275,6 +282,7 @@ fun MusicPlayerScreen(
                                 onPlayTrack = onPlayTrack,
                                 onToggleFavorite = onToggleFavorite,
                                 onAddToPlaylist = ::openPlaylistPicker,
+                                onEditTrack = { trackToEdit = it },
                             )
                         }
                     }
@@ -324,6 +332,7 @@ fun MusicPlayerScreen(
                 onSelectEqPreset = onSelectEqPreset,
                 onToggleFavorite = onToggleFavorite,
                 onAddToPlaylist = ::openPlaylistPicker,
+                onEditTrack = { trackToEdit = it },
                 onOpenSleepTimer = { showSleepTimerDialog = true },
             )
         }
@@ -353,6 +362,17 @@ fun MusicPlayerScreen(
                 onCreatePlaylist(name, pendingPlaylistTrack)
                 showCreatePlaylistDialog = false
                 pendingPlaylistTrack = null
+            },
+        )
+    }
+
+    trackToEdit?.let { track ->
+        EditTrackDialog(
+            track = track,
+            onDismiss = { trackToEdit = null },
+            onConfirm = { title, artist, album ->
+                onEditTrack(track, title, artist, album)
+                trackToEdit = null
             },
         )
     }
@@ -449,6 +469,7 @@ private fun NowPlayingPanel(
     onSelectEqPreset: (EqPreset) -> Unit,
     onToggleFavorite: (TrackEntity) -> Unit,
     onAddToPlaylist: (TrackEntity) -> Unit,
+    onEditTrack: (TrackEntity) -> Unit,
     onOpenFullPlayer: () -> Unit,
     onOpenSleepTimer: () -> Unit,
 ) {
@@ -479,6 +500,7 @@ private fun NowPlayingPanel(
                     Text(
                         text = track?.title ?: "还没有开始播放",
                         style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -521,6 +543,11 @@ private fun NowPlayingPanel(
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
                     Text("加入歌单")
+                }
+                TextButton(onClick = { onEditTrack(track) }) {
+                    Icon(Icons.Rounded.Edit, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("编辑信息")
                 }
             }
 
@@ -635,6 +662,7 @@ private fun FullPlayerOverlay(
     onSelectEqPreset: (EqPreset) -> Unit,
     onToggleFavorite: (TrackEntity) -> Unit,
     onAddToPlaylist: (TrackEntity) -> Unit,
+    onEditTrack: (TrackEntity) -> Unit,
     onOpenSleepTimer: () -> Unit,
 ) {
     val track = state.playback.currentTrack ?: return
@@ -707,6 +735,7 @@ private fun FullPlayerOverlay(
                 Text(
                     text = track.title,
                     style = MaterialTheme.typography.headlineSmall,
+                    color = TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
@@ -730,6 +759,11 @@ private fun FullPlayerOverlay(
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
                     Text("加入歌单")
+                }
+                TextButton(onClick = { onEditTrack(track) }) {
+                    Icon(Icons.Rounded.Edit, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("编辑信息")
                 }
                 IconButton(onClick = { onToggleFavorite(track) }) {
                     Icon(
@@ -1011,6 +1045,7 @@ private fun TrackRow(
     onPlayTrack: (TrackEntity) -> Unit,
     onToggleFavorite: (TrackEntity) -> Unit,
     onAddToPlaylist: (TrackEntity) -> Unit,
+    onEditTrack: (TrackEntity) -> Unit,
     playlistIdForRemoval: Long? = null,
     onRemoveFromPlaylist: ((Long, TrackEntity) -> Unit)? = null,
 ) {
@@ -1032,6 +1067,7 @@ private fun TrackRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     track.title,
+                    color = TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.SemiBold,
@@ -1050,6 +1086,9 @@ private fun TrackRow(
                 )
             }
             Text(track.durationMs.formatAsClock(), color = TextMuted)
+            IconButton(onClick = { onEditTrack(track) }) {
+                Icon(Icons.Rounded.Edit, contentDescription = "编辑歌曲信息", tint = TextPrimary)
+            }
             if (playlistIdForRemoval != null && onRemoveFromPlaylist != null) {
                 IconButton(onClick = { onRemoveFromPlaylist(playlistIdForRemoval, track) }) {
                     Icon(Icons.Rounded.RemoveCircleOutline, contentDescription = "移出歌单", tint = Accent)
@@ -1267,6 +1306,61 @@ private fun CreatePlaylistDialog(
                 enabled = text.text.isNotBlank(),
             ) {
                 Text("创建")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
+private fun EditTrackDialog(
+    track: TrackEntity,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, String) -> Unit,
+) {
+    var title by remember(track.contentUri) { mutableStateOf(TextFieldValue(track.title)) }
+    var artist by remember(track.contentUri) { mutableStateOf(TextFieldValue(track.artist)) }
+    var album by remember(track.contentUri) { mutableStateOf(TextFieldValue(track.album)) }
+    val canSave = title.text.isNotBlank() && artist.text.isNotBlank() && album.text.isNotBlank()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑歌曲信息") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("歌曲名称") },
+                )
+                OutlinedTextField(
+                    value = artist,
+                    onValueChange = { artist = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("歌手") },
+                )
+                OutlinedTextField(
+                    value = album,
+                    onValueChange = { album = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("专辑") },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(title.text, artist.text, album.text) },
+                enabled = canSave,
+            ) {
+                Text("保存")
             }
         },
         dismissButton = {

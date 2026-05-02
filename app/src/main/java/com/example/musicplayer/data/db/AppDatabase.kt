@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PlaylistEntity::class,
         PlaylistTrackCrossRef::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -53,12 +53,26 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val migration2To3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `tracks` ADD COLUMN `customTitle` TEXT",
+                )
+                database.execSQL(
+                    "ALTER TABLE `tracks` ADD COLUMN `customArtist` TEXT",
+                )
+                database.execSQL(
+                    "ALTER TABLE `tracks` ADD COLUMN `customAlbum` TEXT",
+                )
+            }
+        }
+
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(
                 context,
                 AppDatabase::class.java,
                 "music-player.db",
-            ).addMigrations(migration1To2)
+            ).addMigrations(migration1To2, migration2To3)
                 .build()
     }
 }
